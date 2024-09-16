@@ -1,0 +1,168 @@
+From 83e5e98916a4822bce6b42c8a25463de5be50b88 Mon Sep 17 00:00:00 2001
+From: JT <95458994+jvodlz@users.noreply.github.com>
+Date: Mon, 9 Sep 2024 14:43:50 +1200
+Subject: [PATCH 1/4] update getDataPoint
+
+---
+ client3.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/client3.py b/client3.py
+index 3fc09b7..e73447e 100644
+--- a/client3.py
++++ b/client3.py
+@@ -35,7 +35,7 @@ def getDataPoint(quote):
+     stock = quote['stock']
+     bid_price = float(quote['top_bid']['price'])
+     ask_price = float(quote['top_ask']['price'])
+-    price = bid_price
++    price = (bid_price + ask_price) / 2
+     return stock, bid_price, ask_price, price
+ 
+ 
+-- 
+2.37.0.windows.1
+
+
+From a7714736c7900c6fd378b3c35fd774bfa7c4ace8 Mon Sep 17 00:00:00 2001
+From: JT <95458994+jvodlz@users.noreply.github.com>
+Date: Mon, 9 Sep 2024 14:47:21 +1200
+Subject: [PATCH 2/4] update getRatio
+
+---
+ client3.py | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/client3.py b/client3.py
+index e73447e..79624cd 100644
+--- a/client3.py
++++ b/client3.py
+@@ -31,7 +31,6 @@ N = 500
+ 
+ def getDataPoint(quote):
+     """ Produce all the needed values to generate a datapoint """
+-    """ ------------- Update this function ------------- """
+     stock = quote['stock']
+     bid_price = float(quote['top_bid']['price'])
+     ask_price = float(quote['top_ask']['price'])
+@@ -41,8 +40,9 @@ def getDataPoint(quote):
+ 
+ def getRatio(price_a, price_b):
+     """ Get ratio of price_a and price_b """
+-    """ ------------- Update this function ------------- """
+-    return 1
++    if price_b == 0:
++        return
++    return price_a / price_b
+ 
+ 
+ # Main
+-- 
+2.37.0.windows.1
+
+
+From 2a0be1efb692867cf582b5bf70af6563a5ebed28 Mon Sep 17 00:00:00 2001
+From: JT <95458994+jvodlz@users.noreply.github.com>
+Date: Mon, 9 Sep 2024 14:50:17 +1200
+Subject: [PATCH 3/4] update main
+
+---
+ client3.py | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/client3.py b/client3.py
+index 79624cd..2dc7a1b 100644
+--- a/client3.py
++++ b/client3.py
+@@ -51,9 +51,10 @@ if __name__ == "__main__":
+     for _ in iter(range(N)):
+         quotes = json.loads(urllib.request.urlopen(QUERY.format(random.random())).read())
+ 
+-        """ ----------- Update to get the ratio --------------- """
++        prices = {}
+         for quote in quotes:
+             stock, bid_price, ask_price, price = getDataPoint(quote)
++            prices[stock] = price
+             print("Quoted %s at (bid:%s, ask:%s, price:%s)" % (stock, bid_price, ask_price, price))
+ 
+-        print("Ratio %s" % getRatio(price, price))
++        print("Ratio %s" % getRatio(prices["ABC"], prices["DEF"]))
+-- 
+2.37.0.windows.1
+
+
+From 53229a65f68016b3a888d40906e0bdeb0bec60b1 Mon Sep 17 00:00:00 2001
+From: JT <95458994+jvodlz@users.noreply.github.com>
+Date: Mon, 9 Sep 2024 15:00:22 +1200
+Subject: [PATCH 4/4] update unit test
+
+---
+ client_test.py | 49 ++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 34 insertions(+), 15 deletions(-)
+
+diff --git a/client_test.py b/client_test.py
+index af2bf26..a0d2850 100644
+--- a/client_test.py
++++ b/client_test.py
+@@ -1,24 +1,43 @@
+ import unittest
+ from client3 import getDataPoint
+ 
+-class ClientTest(unittest.TestCase):
+-  def test_getDataPoint_calculatePrice(self):
+-    quotes = [
+-      {'top_ask': {'price': 121.2, 'size': 36}, 'timestamp': '2019-02-11 22:06:30.572453', 'top_bid': {'price': 120.48, 'size': 109}, 'id': '0.109974697771', 'stock': 'ABC'},
+-      {'top_ask': {'price': 121.68, 'size': 4}, 'timestamp': '2019-02-11 22:06:30.572453', 'top_bid': {'price': 117.87, 'size': 81}, 'id': '0.109974697771', 'stock': 'DEF'}
+-    ]
+-    """ ------------ Add the assertion below ------------ """
+-
+-  def test_getDataPoint_calculatePriceBidGreaterThanAsk(self):
+-    quotes = [
+-      {'top_ask': {'price': 119.2, 'size': 36}, 'timestamp': '2019-02-11 22:06:30.572453', 'top_bid': {'price': 120.48, 'size': 109}, 'id': '0.109974697771', 'stock': 'ABC'},
+-      {'top_ask': {'price': 121.68, 'size': 4}, 'timestamp': '2019-02-11 22:06:30.572453', 'top_bid': {'price': 117.87, 'size': 81}, 'id': '0.109974697771', 'stock': 'DEF'}
+-    ]
+-    """ ------------ Add the assertion below ------------ """
+ 
++class ClientTest(unittest.TestCase):
++    def test_getDataPoint_calculatePrice(self):
++        quotes = [
++            {'top_ask': {'price': 121.2, 'size': 36}, 'timestamp': '2019-02-11 22:06:30.572453',
++             'top_bid': {'price': 120.48, 'size': 109}, 'id': '0.109974697771', 'stock': 'ABC'},
++            {'top_ask': {'price': 121.68, 'size': 4}, 'timestamp': '2019-02-11 22:06:30.572453',
++             'top_bid': {'price': 117.87, 'size': 81}, 'id': '0.109974697771', 'stock': 'DEF'}
++        ]
++        for quote in quotes:
++            self.assertEqual(
++                getDataPoint(quote),
++                (
++                    quote['stock'],
++                    quote['top_bid']['price'],
++                    quote['top_ask']['price'],
++                    (quote['top_bid']['price'] + quote['top_ask']['price']) / 2)
++            )
+ 
+-  """ ------------ Add more unit tests ------------ """
++    def test_getDataPoint_calculatePriceBidGreaterThanAsk(self):
++        quotes = [
++            {'top_ask': {'price': 119.2, 'size': 36}, 'timestamp': '2019-02-11 22:06:30.572453',
++             'top_bid': {'price': 120.48, 'size': 109}, 'id': '0.109974697771', 'stock': 'ABC'},
++            {'top_ask': {'price': 121.68, 'size': 4}, 'timestamp': '2019-02-11 22:06:30.572453',
++             'top_bid': {'price': 117.87, 'size': 81}, 'id': '0.109974697771', 'stock': 'DEF'}
++        ]
++        for quote in quotes:
++            self.assertEqual(
++                getDataPoint(quote),
++                (
++                    quote['stock'],
++                    quote['top_bid']['price'],
++                    quote['top_ask']['price'],
++                    (quote['top_bid']['price'] + quote['top_ask']['price']) / 2)
++            )
+ 
++    """ ------------ Add more unit tests ------------ """
+ 
+ 
+ if __name__ == '__main__':
+-- 
+2.37.0.windows.1
+

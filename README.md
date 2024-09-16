@@ -10,5 +10,5 @@ The trader would like to be able to monitor two historically correlated stocks a
 - Run `npm install` to install dependencies
 
 # Getting Started
-- To start the data server, use `python datafeed/server3.py` (In respective project directories of the tasks)
+- To start the data server, use `python datafeed/server3.py` (from root directory)
 - After the server is running, use `npm start` to run the app
